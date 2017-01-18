@@ -6,16 +6,12 @@ import random
 import numpy as np
 import tensorflow as tf
 
-#sess = tf.InteractiveSession()
-with tf.Session() as sess:
-  filename_q = tf.train.string_input_producer(["/home/hans/corpus/dgt-aquis/sv/999/ce-2010-999-01000101.sv.txt", "/home/hans/corpus/dgt-aquis/sv/999/ce-2010-999-toc.sv.txt"])
-  reader = tf.TextLineReader()
-  _, filename = reader.read(filename_q)
-  words = tf.compat.as_str(filename).split()
-  print('Data size', len(words))
+fh = open("/home/hans/corpus/dgt-aquis/sv/999/ce-2010-999-01000101.sv.txt", "r")
+words = fh.readlines()[0].split()
+print('Data size', len(words))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 50000
+vocabulary_size = 10000
 
 def build_dataset(words):
   count = [['UNK', -1]]
