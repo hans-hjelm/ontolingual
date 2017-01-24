@@ -7,7 +7,9 @@ import numpy as np
 import tensorflow as tf
 
 fh = open("/home/hans/corpus/dgt-aquis/sv/999/ce-2010-999-01000101.sv.txt", "r")
-words = fh.readlines()[0].split()
+words = []
+for line in fh.readlines():
+  words += line.lower().split()
 print('Data size', len(words))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
@@ -141,7 +143,7 @@ with tf.Session(graph=graph) as session:
   print("Initialized")
 
   average_loss = 0
-  for step in xrange(num_steps):
+  for step in range(num_steps):
     batch_inputs, batch_labels = generate_batch(
         batch_size, num_skips, skip_window)
     feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
