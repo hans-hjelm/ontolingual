@@ -11,7 +11,7 @@ python3 ../hyperwords/hyperwords/corpus2pairs.py --win 2 --sub 1e-5 --thr 10 ${C
 ../hyperwords/scripts/pairs2counts.sh modeling_data/pairs > modeling_data/counts
 python3 ../hyperwords/hyperwords/counts2vocab.py modeling_data/counts
 
-# Calculate PMI matrices for each collection of pairs
+# Calculate PMI matrix for the pairs
 python3 ../hyperwords/hyperwords/counts2pmi.py --cds 0.75 modeling_data/counts modeling_data/pmi
 
 # Create embeddings with SVD
