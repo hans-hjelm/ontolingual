@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CORPUS=/home/hans/corpus/dgt-aquis/en/en_part01.txt
+CORPUS=/home/hans/corpus/dgt-aquis/en/en_part01_11.txt
 
 ############################################
 # Window size 30 characters, ngraph length 3
@@ -20,9 +20,5 @@ cp ngraph_data/pmi.words.vocab ngraph_data/svd.words.vocab
 cp ngraph_data/pmi.contexts.vocab ngraph_data/svd.contexts.vocab
 
 # Evaluate on Word Similarity
-python3 ../hyperwords/hyperwords/ws_eval.py --neg 5 --len 3 PPMIng ngraph_data/pmi ../hyperwords/testsets/ws/ws353.txt
-python3 ../hyperwords/hyperwords/ws_eval.py --eig 0 --len 3 SVDng ngraph_data/svd ../hyperwords/testsets/ws/ws353.txt
-
-# Evaluate on Analogies
-python3 ../hyperwords/hyperwords/analogy_eval.py --len 3 PPMIng ngraph_data/pmi ../hyperwords/testsets/analogy/google.txt
-python3 ../hyperwords/hyperwords/analogy_eval.py --eig 1.25 --len 3 SVDng ngraph_data/svd ../hyperwords/testsets/analogy/google.txt
+python3 ../hyperwords/hyperwords/ws_eval.py --neg 5 --len 3 PPMIng ngraph_data/pmi ../hyperwords/testsets/ws/ws353_similarity.txt
+python3 ../hyperwords/hyperwords/ws_eval.py --eig 0 --len 3 SVDng ngraph_data/svd ../hyperwords/testsets/ws/ws353_similarity.txt
