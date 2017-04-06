@@ -1,6 +1,11 @@
 # Project-specific
 modeling_data/
 ngraph_data/
+ngraph_data_3/
+ngraph_data_4/
+ngraph_data_5/
+ngraph_data_6/
+sort*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
