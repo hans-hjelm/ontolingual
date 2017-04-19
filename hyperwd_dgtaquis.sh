@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CORPUS=/home/hans/corpus/dgt-acquis/en/en_part01_16.txt
+CORPUS=/home/hans/corpus/dgt-acquis/en/en_part01_22.txt
 
 ########################################
 # Window size 2 with "clean" subsampling
