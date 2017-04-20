@@ -1,6 +1,7 @@
 from docopt import docopt
 from ontofeature.hyperwd_feature import HyperwdFeature
 
+
 def main():
     args = docopt("""
     Usage:
