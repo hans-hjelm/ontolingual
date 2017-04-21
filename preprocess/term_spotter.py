@@ -1,4 +1,6 @@
 import re
+
+from collections import Counter
 from docopt import docopt
 
 
@@ -7,6 +9,7 @@ class TermSpotter:
     def __init__(self, parsed_ontology):
         self.term_to_id = dict()
         self.start_to_rest = dict()
+        self.term_freqs = Counter()
         self.analyze_terms(parsed_ontology)
 
     def analyze_terms(self, parsed_ontlogy):
@@ -52,6 +55,7 @@ class TermSpotter:
                             i += len(longest_term.split(' '))
                             longest_term += '#' + self.term_to_id[longest_term]
                             longest_term = longest_term.replace(' ', '_')
+                            self.term_freqs[longest_term] += 1
                             current_line += longest_term + ' '
                         else:
                             current_line += words[i] + ' '
@@ -65,6 +69,11 @@ class TermSpotter:
                 current_line = ''
                 i = 0
 
+    def print_term_freqs(self):
+        with open('term_freqs.tsv', 'w') as tf:
+            for (term, freq) in self.term_freqs.most_common():
+                tf.write(term + "\t" + str(freq) + "\n")
+
 
 def main():
     args = docopt("""
@@ -73,6 +82,7 @@ def main():
     """)
     ts = TermSpotter(args['<parsed_ontology>'])
     ts.spot_terms(args['<corpus>'])
+    ts.print_term_freqs()
 
 
 if __name__ == '__main__':

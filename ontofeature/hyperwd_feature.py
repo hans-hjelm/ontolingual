@@ -5,9 +5,9 @@ from hyperwords.representations import embedding
 class HyperwdFeature:
 
     def __init__(self, path):
-        self.non_norm_m = explicit.Explicit(path, False)
-        self.sim_m = explicit.PositiveExplicit(path, neg=5)
-        self.svd_m = embedding.SVDEmbedding(path, eig=0)
+        self.non_norm_m = explicit.Explicit(path + 'pmi', False)
+        self.sim_m = explicit.PositiveExplicit(path + 'pmi', neg=5)
+        self.svd_m = embedding.SVDEmbedding(path + 'svd', eig=0)
 
     def get_raw_vector(self, word):
         return self.non_norm_m.represent(word)
