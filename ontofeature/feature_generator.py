@@ -1,5 +1,6 @@
-import xml.etree.ElementTree as ET
+import math
 import ontofeature as ontf
+import xml.etree.ElementTree as ET
 
 from docopt import docopt
 from hyperwd_feature import HyperwdFeature
@@ -13,6 +14,10 @@ class FeatureGenerator:
         self.broad_to_narrow = dict()
         self.parse_ontology_rels(path_to_ontology)
         self.wfreq = dict()
+        self.header = 'id\tlabel\tfreq_word1\tfreq_word2\tfreq_diff\tsimilarity_pmi\tsimilarity_svd\t\
+                       context_subsumption\tcontext_entropy_word1\tcontext_entropy_word2\tentropy_diff\t\
+                       normalized_entropy_w1\tnormalized_entropy_w2\tnormalized_entropy_diff'
+        self.freq_cutoff = 10
 
     def parse_ontology_rels(self, path_to_ontology):
         tree = ET.parse(path_to_ontology)
@@ -29,18 +34,24 @@ class FeatureGenerator:
         words = set()
         hf = open('hyper_features.tsv', 'w')
         cf = open('cohyp_features.tsv', 'w')
+        hf.write(self.header + '\n')
+        cf.write(self.header + '\n')
         with open(wordlist) as wl:
             for line in wl:
                 parts = line.strip().split('\t')
                 words.add(parts[0])
                 self.wfreq[parts[0]] = parts[1]
         for word1 in words:
+            if int(self.wfreq[word1]) < self.freq_cutoff:
+                continue
             for word2 in words:
                 id1 = word1.rsplit('#', maxsplit=1)[1]
                 id2 = word2.rsplit('#', maxsplit=1)[1]
                 if id1 == id2:
                     continue
                 common_features = self.get_common_features(word1, word2)
+                if common_features == '':
+                    continue
                 hyper_example = self.get_hyper_features(id1, id2) + common_features
                 hf.write(hyper_example + '\n')
                 if id1 < id2:
@@ -67,16 +78,22 @@ class FeatureGenerator:
         return cohyp_example
 
     def get_common_features(self, word1, word2):
-        example = '\t' + self.wfreq[word1] + '\t' + self.wfreq[word2] + '\t' + str(int(self.wfreq[word1]) -
-                                                                                   int(self.wfreq[word2]))
+        wfreq1 = int(self.wfreq[word1])
+        wfreq2 = int(self.wfreq[word2])
+        v1 = self.hwf.get_sim_vector(word1)
+        v2 = self.hwf.get_sim_vector(word2)
+        if v1.getnnz() == 0 or v2.getnnz() == 0:
+            return ''
+        example = '\t' + str(wfreq1) + '\t' + str(wfreq2) + '\t' + str(wfreq1 - wfreq2)
         example += '\t' + str(self.hwf.get_similarity(word1, word2))
         example += '\t' + str(self.hwf.get_svd_similarity(word1, word2))
-        v1 = self.hwf.get_raw_vector(word1)
-        v2 = self.hwf.get_raw_vector(word2)
         example += '\t' + str(ontf.context_subsumption(v1, v2))
         ent1 = ontf.entropy(v1)
         ent2 = ontf.entropy(v2)
         example += '\t' + str(ent1) + '\t' + str(ent2) + '\t' + str(ent1 - ent2)
+        ent_rel_freq1 = ent1/math.log(wfreq1, 2)
+        ent_rel_freq2 = ent2/math.log(wfreq2, 2)
+        example += '\t' + str(ent_rel_freq1) + '\t' + str(ent_rel_freq2) + '\t' + str(ent_rel_freq1 - ent_rel_freq2)
         return example
 
 

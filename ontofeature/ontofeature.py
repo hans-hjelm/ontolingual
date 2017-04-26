@@ -11,4 +11,8 @@ def context_subsumption(context_vector1, context_vector2):
 
 
 def entropy(context_vector):
-    return scipy.stats.entropy(context_vector.data, base=2)
+    context_sum = sum(context_vector.data)
+    if context_sum == 0:
+        return 0
+    data_as_probs = context_vector.data/sum(context_vector.data)
+    return scipy.stats.entropy(data_as_probs, base=2)

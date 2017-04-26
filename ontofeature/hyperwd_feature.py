@@ -5,7 +5,7 @@ from hyperwords.representations import embedding
 class HyperwdFeature:
 
     def __init__(self, path):
-        self.non_norm_m = explicit.Explicit(path + 'pmi', False)
+        self.non_norm_m = explicit.Explicit(path + 'pmi')
         self.sim_m = explicit.PositiveExplicit(path + 'pmi', neg=5)
         self.svd_m = embedding.SVDEmbedding(path + 'svd', eig=0)
 
