@@ -42,21 +42,24 @@ class FeatureGenerator:
                 words.add(parts[0])
                 self.wfreq[parts[0]] = parts[1]
         for word1 in words:
-            if int(self.wfreq[word1]) < self.freq_cutoff:
+            wfreq1 = int(self.wfreq[word1])
+            if wfreq1 < self.freq_cutoff:
                 continue
+            v1 = self.hwf.get_raw_vector(word1)
+            ent1 = ontf.entropy(v1)
+            ent_rel_freq1 = ent1 / math.log(wfreq1, 2)
+            id1 = word1.rsplit('#', maxsplit=1)[1]
             for word2 in words:
-                id1 = word1.rsplit('#', maxsplit=1)[1]
                 id2 = word2.rsplit('#', maxsplit=1)[1]
                 if id1 == id2:
                     continue
-                common_features = self.get_common_features(word1, word2)
+                common_features = self.get_common_features(word1, word2, wfreq1, v1, ent1, ent_rel_freq1)
                 if common_features == '':
                     continue
                 hyper_example = self.get_hyper_features(id1, id2) + common_features
                 hf.write(hyper_example + '\n')
-                if id1 < id2:
-                    cohyp_example = self.get_cohyp_features(id1, id2) + common_features
-                    cf.write(cohyp_example + '\n')
+                cohyp_example = self.get_cohyp_features(id1, id2) + common_features
+                cf.write(cohyp_example + '\n')
         hf.close()
         cf.close()
 
@@ -77,21 +80,17 @@ class FeatureGenerator:
             cohyp_example += '\t' + '0'
         return cohyp_example
 
-    def get_common_features(self, word1, word2):
-        wfreq1 = int(self.wfreq[word1])
+    def get_common_features(self, word1, word2, wfreq1, v1, ent1, ent_rel_freq1):
         wfreq2 = int(self.wfreq[word2])
-        v1 = self.hwf.get_sim_vector(word1)
-        v2 = self.hwf.get_sim_vector(word2)
+        v2 = self.hwf.get_raw_vector(word2)
         if v1.getnnz() == 0 or v2.getnnz() == 0:
             return ''
         example = '\t' + str(wfreq1) + '\t' + str(wfreq2) + '\t' + str(wfreq1 - wfreq2)
         example += '\t' + str(self.hwf.get_similarity(word1, word2))
         example += '\t' + str(self.hwf.get_svd_similarity(word1, word2))
         example += '\t' + str(ontf.context_subsumption(v1, v2))
-        ent1 = ontf.entropy(v1)
         ent2 = ontf.entropy(v2)
         example += '\t' + str(ent1) + '\t' + str(ent2) + '\t' + str(ent1 - ent2)
-        ent_rel_freq1 = ent1/math.log(wfreq1, 2)
         ent_rel_freq2 = ent2/math.log(wfreq2, 2)
         example += '\t' + str(ent_rel_freq1) + '\t' + str(ent_rel_freq2) + '\t' + str(ent_rel_freq1 - ent_rel_freq2)
         return example
