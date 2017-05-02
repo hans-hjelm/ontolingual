@@ -14,9 +14,7 @@ class FeatureGenerator:
         self.broad_to_narrow = dict()
         self.parse_ontology_rels(path_to_ontology)
         self.wfreq = dict()
-        self.header = 'id\tlabel\tfreq_word1\tfreq_word2\tfreq_diff\tsimilarity_pmi\tsimilarity_svd\t\
-                       context_subsumption\tcontext_entropy_word1\tcontext_entropy_word2\tentropy_diff\t\
-                       normalized_entropy_w1\tnormalized_entropy_w2\tnormalized_entropy_diff'
+        self.header = 'id\tlabel\tfreq_word1\tfreq_word2\tfreq_diff\tsimilarity_pmi\tsimilarity_svd\tcontext_subsumption\tcontext_entropy_word1\tcontext_entropy_word2\tentropy_diff\tnormalized_entropy_w1\tnormalized_entropy_w2\tnormalized_entropy_diff'
         self.freq_cutoff = 10
 
     def parse_ontology_rels(self, path_to_ontology):
