@@ -13,9 +13,10 @@ from sklearn.preprocessing import scale
 class Ontoclassifier:
 
     def __init__(self):
-        self.n_fold = 10
-        self.cores = -1
+        self.n_fold = 3
+        self.cores = 1
         self.verbosity = 2
+        self.random_state = 12
 
     def train_logreg(self, data_file, outfile):
         hdf = pd.read_csv(data_file, delimiter='\t', header=0)
@@ -46,7 +47,7 @@ class Ontoclassifier:
                           normalized_entropy_w2 + normalized_entropy_diff', hdf, return_type='dataframe')
         y = np.ravel(y)
 
-        clf = RFC(n_estimators=300, verbose=2, random_state=12, class_weight='balanced')
+        clf = RFC(n_estimators=300, verbose=2, random_state=self.random_state, class_weight='balanced')
 
         predicted = cross_val_predict(clf, X, y, cv=self.n_fold, verbose=self.verbosity, method='predict_proba', n_jobs=self.cores)
         positive_pred = predicted[:, 1]
@@ -66,7 +67,7 @@ class Ontoclassifier:
                           normalized_entropy_w2 + normalized_entropy_diff', hdf, return_type='dataframe')
         y = np.ravel(y)
 
-        clf = GBC(random_state=12, verbose=self.verbosity)
+        clf = GBC(random_state=self.random_state, verbose=self.verbosity)
 
         predicted = cross_val_predict(clf, X, y, cv=self.n_fold, verbose=2, method='predict_proba', n_jobs=self.cores)
         positive_pred = predicted[:, 1]
