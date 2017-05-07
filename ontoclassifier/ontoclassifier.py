@@ -28,7 +28,7 @@ class Ontoclassifier:
         y = np.ravel(y)
         X = scale(X)
 
-        clf = LogisticRegression(class_weight='balanced', solver='liblinear')
+        clf = LogisticRegression(solver='liblinear')
         predicted = cross_val_predict(clf, X, y, cv=self.n_fold, method='predict_proba', n_jobs=self.cores, verbose=self.verbosity)
         positive_pred = predicted[:, 1]
         print('CV Gini: ' + str(2 * metrics.roc_auc_score(y, positive_pred) - 1))
