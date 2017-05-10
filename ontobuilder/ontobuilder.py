@@ -53,8 +53,10 @@ class Ontobuilder:
         (hyper_ids, hyper_score) = self.find_best_specific_relation(self.hyper_probs, self.forbidden_hyp, 'hyperonym')
         (cohyp_ids, cohyp_score) = self.find_best_specific_relation(self.cohyp_probs, self.forbidden_co, 'cohyponym')
         if cohyp_score > hyper_score:
+            self.cohyp_probs.remove((cohyp_ids, cohyp_score))
             return cohyp_ids, cohyp_score, 'cohyponym'
         else:
+            self.hyper_probs.remove((hyper_ids, hyper_score))
             return hyper_ids, hyper_score, 'hyperonym'
 
     def find_best_specific_relation(self, relation_probabilities, forbidden, relation):
@@ -66,9 +68,8 @@ class Ontobuilder:
                 break
             if ids in forbidden:
                 continue
-            if self.check_relation(ids, 'hyperonym'):
+            if self.check_relation(ids, relation):
                 score = self.score_rel_and_delta(ids, relation)
-                #TODO: write function on prev line
                 if score > top_score:
                     top_ids = ids
                     top_score = score
@@ -98,7 +99,7 @@ class Ontobuilder:
                 return False
 
     def is_abstract_node(self, id):
-        return id == 'root' or id.startswith('abstractno')
+        return id == 'root' or id.startswith('abstractnode')
 
     def smallest_common_subsumer(self, id1, id2, parents1, parents2):
         parents1.add(id1)
@@ -124,7 +125,8 @@ class Ontobuilder:
 
     def score_rel_and_delta(self, ids, relation):
         delta = self.calculate_delta(ids, relation)
-        #TODO: continue here
+        score = self.score_delta(delta)
+        return score
 
     def calculate_delta(self, ids, relation):
         delta = list()
@@ -137,28 +139,128 @@ class Ontobuilder:
             node2 = self.ontology.vertex(self.term_id_to_vertex_id[id2])
         else:
             node2 = None
+        if not node1 and not node2:
+            return delta
         if relation == 'hyperonym':
-            if not node1 and not node2:
-                return delta
-            if not id2:
+            if not node2:
                 parent1 = self.get_onto_parent_id(id1)
                 for node in parent1.out_neighbours():
                     node_label = self.onto_labels[node]
                     delta.append((node_label + '-' + id2, 'cohyponym'))
-            if not id1:
+            elif not node1:
+                parent2 = self.get_onto_parent_id(id2)
+                if not parent2.startswith('abstractnode'):
+                    return delta
+                for node in parent2.out_neighbours():
+                    node_label = self.onto_labels[node]
+                    if node_label == id2:
+                        continue
+                    delta.append((id1 + '-' + node_label, 'hyperonym'))
+            else:
+                parent2 = self.get_onto_parent_id(id2)
+                if not self.is_abstract_node(parent2):
+                    return delta
+                for node in node1.out_neighbours():
+                    node_label = self.onto_labels[node]
+                    delta.append((node_label + '-' + id2, 'cohyponym'))
+                if parent2 == 'root':
+                    return delta
+                for node in parent2.out_neighbours():
+                    node_label = self.onto_labels[node]
+                    if node_label == id2:
+                        continue
+                    delta.append((id1 + '-' + node_label, 'hyperonym'))
+                    for node_p in node1.out_neighbours():
+                        node_label_p = self.onto_labels[node_p]
+                        delta.append((node_label_p + '-' + node_label, 'cohyponym'))
+        elif relation == 'cohyponym':
+            if not node2:
+                parent1 = self.get_onto_parent_id(id1)
+                if parent1 == 'root':
+                    return delta
+                for node in parent1.out_neighbours():
+                    node_label = self.onto_labels[node]
+                    if node_label == id1:
+                        continue
+                    delta.append((node_label + '-' + id2, 'cohyponym'))
+                if parent1.startswith('abstractnode'):
+                    return delta
+                delta.append((parent1 + '-' + id2, 'hyperonym'))
+            elif not node1:
                 parent2 = self.get_onto_parent_id(id2)
                 if parent2 == 'root':
                     return delta
                 for node in parent2.out_neighbours():
-                    node_label = self.onto_labels(node)
+                    node_label = self.onto_labels[node]
                     if node_label == id2:
                         continue
-                    delta.append((id1 + '-' + node_label, 'hyperonym'))
+                    delta.append((id1 + '-' + node_label, 'cohyponym'))
+                if parent2.startswith('abstractnode'):
+                    return delta
+                delta.append((parent2 + '-' + id1, 'hyperonym'))
+            else:
+                parent1 = self.get_onto_parent_id(id1)
+                parent2 = self.get_onto_parent_id(id2)
+                if parent1 == 'root' and parent2 == 'root':
+                    return delta
+                elif parent2 == 'root':
+                    for node in parent1.out_neighbours():
+                        node_label = self.onto_labels[node]
+                        if node_label == id1:
+                            continue
+                        delta.append((node_label + '-' + id2, 'cohyponym'))
+                    if parent1.startswith('abstractnode'):
+                        return delta
+                    delta.append((parent1 + '-' + id2, 'hyperonym'))
+                elif parent1 == 'root':
+                    for node in parent2.out_neighbours():
+                        node_label = self.onto_labels[node]
+                        if node_label == id2:
+                            continue
+                        delta.append((id1 + '-' + node_label, 'cohyponym'))
+                    if parent2.startswith('abstractnode'):
+                        return delta
+                    delta.append((parent2 + '-' + id1, 'hyperonym'))
+                elif parent1.startswith('abstractnode') or parent2.startswith('abstractnode'):
+                    for node in parent1.out_neighbours():
+                        node_label = self.onto_labels[node]
+                        if node_label == id1:
+                            continue
+                        for node_p in parent2.out_neighbours():
+                            node_label_p = self.onto_labels[node_p]
+                            if node_label_p == id2:
+                                continue
+                            delta.append((node_label + '-' + node_label_p, 'cohyponym'))
+                    if not self.is_abstract_node(parent1):
+                        for node in parent2.out_neighbours():
+                            node_label = self.onto_labels[node]
+                            if node_label == id2:
+                                continue
+                            delta.append((parent1 + '-' + node_label, 'hyperonym'))
+                    else:
+                        for node in parent1.out_neighbours():
+                            node_label = self.onto_labels[node]
+                            if node_label == id1:
+                                continue
+                            delta.append((parent2 + '-' + node_label, 'hyperonym'))
+        return delta
 
-
-
-
-
+    def score_delta(self, deltas):
+        delta_score = 1.0
+        for (ids, relation) in deltas:
+            if relation == 'cohyponym':
+                if ids in self.lookup_co_probs.keys():
+                    prob = self.lookup_co_probs[ids]
+                else:
+                    prob = self.prob_threshold
+            if relation == 'hyperonym':
+                if ids in self.lookup_hyp_probs.keys():
+                    prob = self.lookup_hyp_probs[ids]
+                else:
+                    prob = self.prob_threshold
+            the_odds = prob / (1.0 - prob)
+            delta_score *= the_odds
+        return delta_score
 
 
 def main():
