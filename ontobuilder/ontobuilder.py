@@ -20,10 +20,13 @@ class Ontobuilder:
         self.cohyp_probs = list()
         self.lookup_hyp_probs = dict()
         self.lookup_co_probs = dict()
-        self.prob_threshold = 0.0001
+        #self.prob_threshold = 0.0001
+        self.prob_threshold = 0.5
         self.forbidden_hyp = set()
         self.forbidden_co = set()
         self.candidate_list_size = 1000
+        self.score_threshold = 1.0
+        self.abstract_node_counter = 0
 
     def read_relation_scores(self, hyperonym_probs, cohyponym_probs, term_to_id):
         with open(term_to_id) as tti:
@@ -46,18 +49,166 @@ class Ontobuilder:
             self.cohyp_probs.sort(key=itemgetter(1), reverse=True)
 
     def build_ontology(self):
-        ids, score, relation = self.find_best_total_relation()
-        #TODO: continue here
+        (ids, score, relation) = self.find_best_relation()
+        while score > self.score_threshold:
+            (id1, id2) = ids.split('-')
+            if id1 in self.term_id_to_vertex_id.keys():
+                node1 = self.ontology.vertex(self.term_id_to_vertex_id[id1])
+            else:
+                node1 = None
+            if id2 in self.term_id_to_vertex_id.keys():
+                node2 = self.ontology.vertex(self.term_id_to_vertex_id[id2])
+            else:
+                node2 = None
+            if relation == 'hyperonym':
+                print(relation + ': ' + ids + ' prob: ' + str(self.lookup_hyp_probs[ids]) + ' score: ' + str(score)
+                      + ' ### ' + self.id_to_term[id1] + ' -> ' + self.id_to_term[id2])
+                if not node1 and not node2:
+                    node1 = self.add_vertex(id1)
+                    node2 = self.add_vertex(id2)
+                    self.ontology.add_edge(self.root, node1)
+                    self.ontology.add_edge(node1, node2)
+                elif not node2:
+                    node2 = self.add_vertex(id2)
+                    self.ontology.add_edge(node1, node2)
+                else:
+                    if not node1:
+                        node1 = self.add_vertex(id1)
+                        self.ontology.add_edge(self.root, node1)
+                    parent2 = self.get_onto_parent_id(id2)
+                    if parent2 == 'root':
+                        self.delete_parent_edge(id2)
+                        self.ontology.add_edge(node1, node2)
+                    elif parent2.startswith('abstractnode'):
+                        parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                        delete_edges = list()
+                        for edge in parent2_node.get_out_edges(parent2_node):
+                            self.ontology.add_edge(node1, edge.target())
+                            delete_edges.append(edge)
+                        self.remove_edges(delete_edges)
+                        self.delete_parent_edge(parent2)
+                        #self.ontology.remove_vertex(parent2_node)
+            elif relation == 'cohyponym':
+                print(relation + ': ' + ids + ' prob: ' + str(self.lookup_co_probs[ids]) + ' score: ' + str(score)
+                      + ' ### ' + self.id_to_term[id1] + ' <-> ' + self.id_to_term[id2])
+                if not node1 and not node2:
+                    node1 = self.add_vertex(id1)
+                    node2 = self.add_vertex(id2)
+                    self.abstract_node_counter += 1
+                    abstract_parent = self.add_vertex('abstractnode_' + str(self.abstract_node_counter))
+                    self.ontology.add_edge(self.root, abstract_parent)
+                    self.ontology.add_edge(abstract_parent, node1)
+                    self.ontology.add_edge(abstract_parent, node2)
+                elif not node2:
+                    node2 = self.add_vertex(id2)
+                    parent1 = self.get_onto_parent_id(id1)
+                    if parent1 == 'root':
+                        self.delete_parent_edge(id1)
+                        self.abstract_node_counter += 1
+                        abstract_parent = self.add_vertex('abstractnode_' + str(self.abstract_node_counter))
+                        self.ontology.add_edge(self.root, abstract_parent)
+                        self.ontology.add_edge(abstract_parent, node1)
+                        self.ontology.add_edge(abstract_parent, node2)
+                    else:
+                        parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                        self.ontology.add_edge(parent1_node, node2)
+                elif not node1:
+                    node1 = self.add_vertex(id1)
+                    parent2 = self.get_onto_parent_id(id2)
+                    if parent2 == 'root':
+                        self.delete_parent_edge(id2)
+                        self.abstract_node_counter += 1
+                        abstract_parent = self.add_vertex('abstractnode_' + str(self.abstract_node_counter))
+                        self.ontology.add_edge(self.root, abstract_parent)
+                        self.ontology.add_edge(abstract_parent, node1)
+                        self.ontology.add_edge(abstract_parent, node2)
+                    else:
+                        parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                        self.ontology.add_edge(parent2_node, node1)
+                else:
+                    parent1 = self.get_onto_parent_id(id1)
+                    parent2 = self.get_onto_parent_id(id2)
+                    if parent1 == 'root' and parent2 == 'root':
+                        self.delete_parent_edge(id1)
+                        self.delete_parent_edge(id2)
+                        self.abstract_node_counter += 1
+                        abstract_parent = self.add_vertex('abstractnode_' + str(self.abstract_node_counter))
+                        self.ontology.add_edge(self.root, abstract_parent)
+                        self.ontology.add_edge(abstract_parent, node1)
+                        self.ontology.add_edge(abstract_parent, node2)
+                    elif parent1 == 'root':
+                        self.delete_parent_edge(id1)
+                        parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                        self.ontology.add_edge(parent2_node, node1)
+                    elif parent2 == 'root':
+                        self.delete_parent_edge(id2)
+                        parent1_node = self.ontology.vertex((self.term_id_to_vertex_id[parent1]))
+                        self.ontology.add_edge(parent1_node, node2)
+                    elif parent2.startswith('abstractnode'):
+                        parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                        parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                        delete_edges = list()
+                        for edge in parent2_node.get_out_edges():
+                            self.ontology.add_edge(parent1_node, edge.target())
+                            delete_edges.append(edge)
+                        self.remove_edges(delete_edges)
+                        self.delete_parent_edge(parent2)
+                        #self.ontology.remove_vertex(parent2_node)
+                    elif parent1.startswith('abstractnode'):
+                        parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                        parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                        delete_edges = list()
+                        for edge in parent1_node.get_out_edges():
+                            self.ontology.add_edge(parent2_node, edge.target())
+                            delete_edges.append(edge)
+                        self.remove_edges(delete_edges)
+                        self.delete_parent_edge(parent1)
+                        #self.ontology.remove_vertex(parent1_node)
+            (ids, score, relation) = self.find_best_relation()
 
-    def find_best_total_relation(self):
+    def remove_edges(self, edges):
+        for edge in edges:
+            self.ontology.remove_edge(edge)
+
+    def add_vertex(self, term_id):
+        node = self.ontology.add_vertex()
+        self.onto_labels[node] = term_id
+        self.term_id_to_vertex_id[term_id] = self.vertex_counter
+        self.vertex_counter += 1
+        return node
+
+    def delete_parent_edge(self, term_id):
+        node = self.ontology.vertex(self.term_id_to_vertex_id[term_id])
+        edge = next(self.ontology.get_in_edges(node))
+        self.ontology.remove_edge(edge)
+
+    def find_best_relation(self):
         (hyper_ids, hyper_score) = self.find_best_specific_relation(self.hyper_probs, self.forbidden_hyp, 'hyperonym')
         (cohyp_ids, cohyp_score) = self.find_best_specific_relation(self.cohyp_probs, self.forbidden_co, 'cohyponym')
         if cohyp_score > hyper_score:
-            self.cohyp_probs.remove((cohyp_ids, cohyp_score))
+            self.remove_relation_prob('cohyponym', cohyp_ids)
             return cohyp_ids, cohyp_score, 'cohyponym'
         else:
-            self.hyper_probs.remove((hyper_ids, hyper_score))
+            self.remove_relation_prob('hyperonym', hyper_ids)
             return hyper_ids, hyper_score, 'hyperonym'
+
+    def remove_relation_prob(self, relation, ids):
+        if relation == 'hyperonym':
+            for i, (id_pair, _) in enumerate(self.hyper_probs):
+                if id_pair == ids:
+                    del self.hyper_probs[i]
+                    return
+        if relation == 'cohyponym':
+            for i, (id_pair, _) in enumerate(self.cohyp_probs):
+                if id_pair == ids:
+                    del self.cohyp_probs[i]
+                    break
+            (id1, id2) = ids.split('-')
+            rev_ids = id2 + '-' + id1
+            for i, (id_pair, _) in enumerate(self.cohyp_probs):
+                if id_pair == rev_ids:
+                    del self.cohyp_probs[i]
+                    return
 
     def find_best_specific_relation(self, relation_probabilities, forbidden, relation):
         top_ids = None
@@ -130,6 +281,7 @@ class Ontobuilder:
 
     def calculate_delta(self, ids, relation):
         delta = list()
+        delta.append((ids, relation))
         (id1, id2) = ids.split('-')
         if id1 in self.term_id_to_vertex_id.keys():
             node1 = self.ontology.vertex(self.term_id_to_vertex_id[id1])
@@ -144,14 +296,16 @@ class Ontobuilder:
         if relation == 'hyperonym':
             if not node2:
                 parent1 = self.get_onto_parent_id(id1)
-                for node in parent1.out_neighbours():
+                parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                for node in parent1_node.out_neighbours():
                     node_label = self.onto_labels[node]
                     delta.append((node_label + '-' + id2, 'cohyponym'))
             elif not node1:
                 parent2 = self.get_onto_parent_id(id2)
                 if not parent2.startswith('abstractnode'):
                     return delta
-                for node in parent2.out_neighbours():
+                parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                for node in parent2_node.out_neighbours():
                     node_label = self.onto_labels[node]
                     if node_label == id2:
                         continue
@@ -165,7 +319,8 @@ class Ontobuilder:
                     delta.append((node_label + '-' + id2, 'cohyponym'))
                 if parent2 == 'root':
                     return delta
-                for node in parent2.out_neighbours():
+                parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                for node in parent2_node.out_neighbours():
                     node_label = self.onto_labels[node]
                     if node_label == id2:
                         continue
@@ -178,7 +333,8 @@ class Ontobuilder:
                 parent1 = self.get_onto_parent_id(id1)
                 if parent1 == 'root':
                     return delta
-                for node in parent1.out_neighbours():
+                parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                for node in parent1_node.out_neighbours():
                     node_label = self.onto_labels[node]
                     if node_label == id1:
                         continue
@@ -190,7 +346,8 @@ class Ontobuilder:
                 parent2 = self.get_onto_parent_id(id2)
                 if parent2 == 'root':
                     return delta
-                for node in parent2.out_neighbours():
+                parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                for node in parent2_node.out_neighbours():
                     node_label = self.onto_labels[node]
                     if node_label == id2:
                         continue
@@ -204,7 +361,8 @@ class Ontobuilder:
                 if parent1 == 'root' and parent2 == 'root':
                     return delta
                 elif parent2 == 'root':
-                    for node in parent1.out_neighbours():
+                    parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                    for node in parent1_node.out_neighbours():
                         node_label = self.onto_labels[node]
                         if node_label == id1:
                             continue
@@ -213,7 +371,8 @@ class Ontobuilder:
                         return delta
                     delta.append((parent1 + '-' + id2, 'hyperonym'))
                 elif parent1 == 'root':
-                    for node in parent2.out_neighbours():
+                    parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                    for node in parent2_node.out_neighbours():
                         node_label = self.onto_labels[node]
                         if node_label == id2:
                             continue
@@ -222,23 +381,25 @@ class Ontobuilder:
                         return delta
                     delta.append((parent2 + '-' + id1, 'hyperonym'))
                 elif parent1.startswith('abstractnode') or parent2.startswith('abstractnode'):
-                    for node in parent1.out_neighbours():
+                    parent1_node = self.ontology.vertex(self.term_id_to_vertex_id[parent1])
+                    parent2_node = self.ontology.vertex(self.term_id_to_vertex_id[parent2])
+                    for node in parent1_node.out_neighbours():
                         node_label = self.onto_labels[node]
                         if node_label == id1:
                             continue
-                        for node_p in parent2.out_neighbours():
+                        for node_p in parent2_node.out_neighbours():
                             node_label_p = self.onto_labels[node_p]
                             if node_label_p == id2:
                                 continue
                             delta.append((node_label + '-' + node_label_p, 'cohyponym'))
                     if not self.is_abstract_node(parent1):
-                        for node in parent2.out_neighbours():
+                        for node in parent2_node.out_neighbours():
                             node_label = self.onto_labels[node]
                             if node_label == id2:
                                 continue
                             delta.append((parent1 + '-' + node_label, 'hyperonym'))
                     else:
-                        for node in parent1.out_neighbours():
+                        for node in parent1_node.out_neighbours():
                             node_label = self.onto_labels[node]
                             if node_label == id1:
                                 continue
@@ -253,14 +414,19 @@ class Ontobuilder:
                     prob = self.lookup_co_probs[ids]
                 else:
                     prob = self.prob_threshold
-            if relation == 'hyperonym':
+            elif relation == 'hyperonym':
                 if ids in self.lookup_hyp_probs.keys():
                     prob = self.lookup_hyp_probs[ids]
                 else:
                     prob = self.prob_threshold
+            if prob == 1.0:
+                prob = 1.0 - self.prob_threshold
             the_odds = prob / (1.0 - prob)
             delta_score *= the_odds
         return delta_score
+
+    def save_ontology(self, filename):
+        self.ontology.save(filename, 'gt')
 
 
 def main():
@@ -270,6 +436,8 @@ def main():
     """)
     oc = Ontobuilder()
     oc.read_relation_scores(args['<hyperonym_probs>'], args['<cohyponym_probs>'], args['<term_to_id>'])
+    oc.build_ontology()
+    oc.save_ontology('ontology.gt')
 
 
 if __name__ == '__main__':
