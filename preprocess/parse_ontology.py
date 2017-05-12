@@ -15,7 +15,7 @@ def parse_ontology(path_to_xml_file):
     root = tree.getroot()
     for record in root.findall('RECORD'):
         libelle = record.find('LIBELLE').text.lower()
-        descripteur_id = record.find('DESCRIPTEUR_ID').text
+        descripteur_id = record.find('DESCRIPTEUR_ID').text.lower()
         if 'translation' in libelle:
             continue
         print(libelle, descripteur_id, sep='\t', end='\n')
