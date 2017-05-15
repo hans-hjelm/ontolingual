@@ -43,11 +43,11 @@ class EurovocOntobuilder:
         for record in thes_root.findall('RECORD'):
             upper_id = record.find('CIBLE_ID').text.lower()
             lower_id = record.find('SOURCE_ID').text.lower()
-            if upper_id not in self.term_id_to_vertex_id.keys():
+            if upper_id in self.term_id_to_vertex_id.keys():
                 upper_node = self.ontology.vertex(self.term_id_to_vertex_id[upper_id])
             else:
                 upper_node = self.add_vertex(upper_id)
-            if lower_id not in self.term_id_to_vertex_id.keys():
+            if lower_id in self.term_id_to_vertex_id.keys():
                 lower_node = self.ontology.vertex(self.term_id_to_vertex_id[lower_id])
             else:
                 lower_node = self.add_vertex(lower_id)
