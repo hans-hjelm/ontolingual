@@ -47,7 +47,7 @@ class PathLengthPmcc:
 def main():
     args = docopt("""
     Usage:
-        eurovoc_ontobuilder.py <gold_standard_ontology> <learned_ontology>
+        path_length_pmcc.py <gold_standard_ontology> <learned_ontology>
     """)
     plp = PathLengthPmcc(args['<gold_standard_ontology>'], args['<learned_ontology>'])
     plp.get_shared_path_lengths()
