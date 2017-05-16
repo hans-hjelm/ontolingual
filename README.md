@@ -24,7 +24,7 @@ python3 preprocess/term_spotting.py <parsed_ontology.tsv> <corpus.txt> > prepped
 
 * Train distributional semantics models. This library relies on the [hyperwords](https://bitbucket.org/omerlevy/hyperwords) repo by Omer Levy. I have a [fork](https://github.com/hans-hjelm/hyperwordshh) which works under python3 and adds some additional functionality; you need to install my fork in order for ontolingual to work properly. There is an example shellscript available in this repo called `hyperwd_dgtacquis.sh` - you can use this as a blueprint when training your distributional semantics model (a.k.a. word embeddings). This will produce data in a local directory called `modelling_data` (created if it does not exist, emptied if it does).
 
-* Create features for training a model. This step requires two types of input data. The first is a gold standard ontology - in the code it is assumed that this is provided in XML format, with each record linking a narrower term to a broader term. In Eurovoc this file is called `relation_bt.xml`. The second input is the output directory created in the previous step, `modelling_data`. Two output fies are produced, one called `hyper_features.tsv` (for training a hyperononmy-recognizing classifier) and one called `cohyp_features.tsv` (for training a cohyponymy-recognizing classifier). Each row in the files has a pair of ids as its first column, the label as its second column, and a number of distributional features following that. Here is how to run the script:
+* Create features for training a model. This step requires two types of input data. The first is a gold standard ontology - in the code it is assumed that this is provided in XML format, with each record linking a narrower term to a broader term. In Eurovoc this file is called `relation_bt.xml`. The second input is the output directory created in the previous step, `modelling_data`. Two output files are produced, one called `hyper_features.tsv` (for training a hyperononmy-recognizing classifier) and one called `cohyp_features.tsv` (for training a cohyponymy-recognizing classifier). Each row in the files has a pair of ids as its first column, the label as its second column, and a number of distributional features following that. Here is how to run the script:
 
 ```bash
 python3 ontofeature/feature_generator.py <relation_bt.xml> <modelling_data>
@@ -55,10 +55,24 @@ python3 ontoeval/path_length_pmcc.py <gold_standard_ontology> <learned_ontology>
 ```
 
 ## Prerequisites
+ontolingual is written to work with Python 3. You will need the following libraries:
+
 * cython
 * docopt
-* You need the version of hyperwords, that I have forked [here](https://github.com/hans-hjelm/hyperwordshh), which works with Python 3 .
+* graph-tool -- install via packet manager
+* hyperwords -- you need the version of hyperwords, that I have forked [here](https://github.com/hans-hjelm/hyperwordshh), which works with Python 3.
 * NumPy
+* pandas
 * scikit-learn
 * SciPy
 * sparsesvd
+
+## Versioning
+The project uses semantic versioning.
+
+## Authors
+* Hans Hjelm
+
+## Acknowledgements
+* As mentioned, Omer Levy's `hyperwords` project provides the ditributional semantics implementation.
+* This project builds on work that I published in my [PhD thesis](http://su.diva-portal.org/smash/record.jsf?dswid=3177&pid=diva2%3A200238&c=3&searchType=SIMPLE&language=en&query=hans+hjelm%27&af=%5B%5D&aq=%5B%5B%5D%5D&aq2=%5B%5B%5D%5D&aqe=%5B%5D&noOfRows=50&sortOrder=author_sort_asc&onlyFullText=false&sf=all).

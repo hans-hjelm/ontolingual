@@ -5,6 +5,11 @@ from docopt import docopt
 
 
 class TermSpotter:
+    """
+    Reads output from the ``parse_ontology.py`` script, along with a corpus, and writes a normalized version of the
+    corpus to output. All occurrences in the corpus of terms listed in the output from ``parsed_ontololgy.py`` will have
+    its ID appended after a #-sign. Whitespace inside the term will be replaced with underscore.
+    """
 
     def __init__(self, parsed_ontology):
         self.term_to_id = dict()

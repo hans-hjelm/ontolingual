@@ -11,6 +11,7 @@ def main():
 
 
 def parse_ontology(path_to_xml_file):
+    """Reads a Eurovoc ``desc_XX.xml`` file and prints term and ID tab-separated to output."""
     tree = ET.parse(path_to_xml_file)
     root = tree.getroot()
     for record in root.findall('RECORD'):

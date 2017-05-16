@@ -4,6 +4,12 @@ from operator import itemgetter
 
 
 class Ontobuilder:
+    """
+    Iteratively adds the most probable relation between two terms to the ontology. Currently supports hyperonymy and 
+    cohyponymy relations. Also, any new relations that are implied by adding the first relation are taken into account 
+    when calculating the most probable relation to add. Relations are added until no new relation can be found that
+    has a probability above the prob_threshold parameter.
+    """
 
     def __init__(self):
         self.ontology = Graph()

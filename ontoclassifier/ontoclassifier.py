@@ -11,6 +11,10 @@ from sklearn.preprocessing import scale
 
 
 class Ontoclassifier:
+    """
+    Reads output from the ``ontofeature`` class and provides convenience methods for training different classifiers
+    using that data.
+    """
 
     def __init__(self):
         self.n_fold = 3

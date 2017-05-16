@@ -3,6 +3,7 @@ from hyperwords.representations import embedding
 
 
 class HyperwdFeature:
+    """Calculates classifier features based on hyperwords data."""
 
     def __init__(self, path):
         self.non_norm_m = explicit.Explicit(path + 'pmi')

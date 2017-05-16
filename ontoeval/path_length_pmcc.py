@@ -4,6 +4,11 @@ from scipy.stats import pearsonr
 
 
 class PathLengthPmcc:
+    """
+    Reads two ontologies (graphs) in graph-tool format. Calculates all shortest path lengths between two terms in the
+    learned ontology, then does the same for the gold standard (for all terms in the learned ontology). The two lists
+    of shortest path lengths are then compared using Pearson's correlation coefficient.
+    """
 
     def __init__(self, gold_standard_ontology_file, learned_ontology_file):
         self.gs_ontology = load_graph(gold_standard_ontology_file)

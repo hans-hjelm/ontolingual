@@ -7,6 +7,7 @@ from hyperwd_feature import HyperwdFeature
 
 
 class FeatureGenerator:
+    """Reads hyperword output along with a Eurovoc ``relation_bt.xml`` file to produce training data for classifiers."""
 
     def __init__(self, path_to_ontology, path_to_hyperwords_dir):
         self.hwf = HyperwdFeature(path_to_hyperwords_dir)

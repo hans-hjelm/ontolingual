@@ -4,6 +4,9 @@ import xml.etree.ElementTree as ET
 
 
 class EurovocOntobuilder:
+    """
+    Reads Eurovoc ``desc_thes.xml`` and ``relation_bt.xml`` files and saves them as graph-tool binary format graphs.
+    """
 
     def __init__(self):
         self.ontology = Graph()
