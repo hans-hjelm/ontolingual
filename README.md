@@ -1,8 +1,8 @@
 # ontolingual
-Ontolingual provides code for going from a corpus to a terminological ontology, using distributional semantics to learn relations. It also provides code for calculating a correlation measure between two ontologies, based on shortest path distances between common entries. This repo is intended for research purposes, not for production.
+Ontolingual provides code for going from a corpus to a terminological ontology, using distributional semantics to learn relations. It also provides code for calculating a correlation measure between two ontologies, based on shortest path distances between common entries. This repo is premierly intended for research purposes, rather than for production.
 
 ## Getting started
-You need two things for this code to be of use: a list of words/terms that you want to order into an ontology, and a text collection containing those words (newspaper articles, dictionary entries, blogposts, or whatever). This library will process the terms and texts in different steps in order to produce the learned ontology. If you have access to a gold standard ontology, it can also calculate a correlation measure between the learned ontlogy and the gold standard.
+You need two things for this code to be of use: a gold standard ontology from which to learn typical relational patterns between words/terms, and a text collection containing those words (newspaper articles, dictionary entries, blogposts, or whatever). This library will process the terms and texts in different steps in order to produce the learned ontology. Using the gold standard ontology, it can also calculate a correlation measure between the learned ontlogy and the gold standard.
 
 Here is a [presetation](https://docs.google.com/presentation/d/1sBr6BH7fFdWgIosr9O77p-l_cFqTy9yFtRA0jKm5kj0/pub?start=true&loop=false&delayms=5000) I gave at the Univeristy of Zurich on the topic, for overview.
 
@@ -53,3 +53,12 @@ python3 ontobuilder/eurovoc_ontobuilder.py <desc_thes.xml> <relation_bt.xml>
 ```bash
 python3 ontoeval/path_length_pmcc.py <gold_standard_ontology> <learned_ontology>
 ```
+
+## Prerequisites
+* cython
+* docopt
+* You need the version of hyperwords, that I have forked [here](https://github.com/hans-hjelm/hyperwordshh), which works with Python 3 .
+* NumPy
+* scikit-learn
+* SciPy
+* sparsesvd
