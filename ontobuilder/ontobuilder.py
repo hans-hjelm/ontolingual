@@ -31,7 +31,7 @@ class Ontobuilder:
         self.score_threshold = 1.0
         self.abstract_node_counter = 0
         self.orphans = list()
-        self.cohyponym_bias = 0.1
+        self.cohyponym_bias = 0.5
         self.target_ontology_size = 600
 
     def read_relation_scores(self, hyperonym_probs, cohyponym_probs, term_to_id):

@@ -1,5 +1,5 @@
 # ontolingual
-Ontolingual provides code for going from a corpus to a terminological ontology, using distributional semantics to learn relations. It also provides code for calculating a correlation measure between two ontologies, based on shortest path distances between common entries. This repo is premierly intended for research purposes, rather than for production.
+Ontolingual provides code for going from a corpus to a terminological ontology, using distributional semantics to train semantic relation classifiers. It also provides code for calculating a correlation measure between two ontologies, based on shortest path distances between common entries. This repo is primarily intended for research purposes, rather than for production.
 
 ## Getting started
 You need two things for this code to be of use: a gold standard ontology from which to learn typical relational patterns between words/terms, and a text collection containing those words (newspaper articles, dictionary entries, blogposts, or whatever). This library will process the terms and texts in different steps in order to produce the learned ontology. Using the gold standard ontology, it can also calculate a correlation measure between the learned ontlogy and the gold standard.
@@ -10,33 +10,33 @@ In all examples I have used [Eurovoc](http://eurovoc.europa.eu/) as list of term
 
 Here follows a brief descrition of each step:
 
-* Preprocessing. It is assumed that you have a mapping between terms and IDs for the terms that you wish to analyze. The mapping should be stared in a tab-separated .tsv file, the first column containing the term, and the second containing the term's unique ID. The `preprocess/parse_ontology.py` script will do this for you if you are using Eurovoc:
+* Preprocessing. It is assumed that you have a mapping between terms and IDs for the terms that you wish to analyze. The mapping should be stored in a tab-separated .tsv file, the first column containing the term, and the second containing the term's unique ID. The `preprocess/parse_ontology.py` script will do this for you if you are using Eurovoc:
 
 ```bash
 python3 preprocess/parse_ontology.py <desc_en.xml> > parsed_ontology.tsv
 ```
 
-* More preprocessing. Once there is a mapping from term to unique IDs, you run a term spotting script, that will mark the occurrence of each term in the text by tagging it with its ID and replacing whitespace with underscore. For example, "nuclear fission" will become "nuclear_fission#1023". it will also lowercase the text and reomove non-alphanumeric characters. Run it like this:
+* More preprocessing. Once there is a mapping from term to unique IDs, you run a term spotting script, that will mark the occurrence of each term in the text by tagging it with its ID and replacing whitespace with underscore. For example, "nuclear fission" will become "nuclear_fission#1023". It will also lowercase the text and remove non-alphanumeric characters. Run it like this:
 
 ```bash
 python3 preprocess/term_spotting.py <parsed_ontology.tsv> <corpus.txt> > prepped_corpus.txt
 ```
 
-* Train distributional semantics models. This library relies on the [hyperwords](https://bitbucket.org/omerlevy/hyperwords) repo by Omer Levy. I have a [fork](https://github.com/hans-hjelm/hyperwordshh) which works under python3 and adds some additional functionality; you need to install my fork in order for ontolingual to work properly. There is an example shellscript available in this repo called `hyperwd_dgtacquis.sh` - you can use this as a blueprint when training your distributional semantics model (a.k.a. word embeddings). This will produce data in a local directory called `modelling_data` (created if it does not exist, emptied if it does).
+* Train distributional semantics models. This library relies on the [hyperwords](https://bitbucket.org/omerlevy/hyperwords) repo by Omer Levy. I have a [fork](https://github.com/hans-hjelm/hyperwordshh) which works under Python 3 and adds some additional functionality; you need to install my fork in order for ontolingual to work properly. There is an example shellscript available in the ontolingual repo called `hyperwd_dgtacquis.sh` - you can use this as a blueprint when training your distributional semantics model (a.k.a. word embeddings). This will produce data in a local directory called `modelling_data` (created if it does not exist, emptied if it does).
 
-* Create features for training a model. This step requires two types of input data. The first is a gold standard ontology - in the code it is assumed that this is provided in XML format, with each record linking a narrower term to a broader term. In Eurovoc this file is called `relation_bt.xml`. The second input is the output directory created in the previous step, `modelling_data`. Two output files are produced, one called `hyper_features.tsv` (for training a hyperononmy-recognizing classifier) and one called `cohyp_features.tsv` (for training a cohyponymy-recognizing classifier). Each row in the files has a pair of ids as its first column, the label as its second column, and a number of distributional features following that. Here is how to run the script:
+* Create features for training a model. This step requires two types of input data. The first is a gold standard ontology - in the code it is assumed that this is provided in XML format, with each record linking a narrower term to a broader term. In Eurovoc this file is called `relation_bt.xml`. The second input is the output directory created in the previous step, `modelling_data`. Two output files are produced, one called `hyper_features.tsv` (for training a hyperonymy-recognizing classifier) and one called `cohyp_features.tsv` (for training a cohyponymy-recognizing classifier). Each row in the files has a pair of ids as its first column, the label as its second column, and a number of distributional features following that. Here is how to run the script:
 
 ```bash
 python3 ontofeature/feature_generator.py <relation_bt.xml> <modelling_data>
 ```
 
-* Train a classifier and score term pairs. Convenience methods for training three types of classifiers are provided: logistic regression, random forest, and gradient boosted decision trees. Models are trained and evaluated using n-fold cross validation, and the Gini of the model is written to standard out. The script takes three argusments: first is the output from the previous step (for example, `hyper-features.tsv`), second is the classifier type, and third is the name of the output file. Each term pair gets a probability that the respective relation holds between the terms (hyperonymy and cohyponymy).
+* Train a classifier and score term pairs. Convenience methods for training three types of classifiers are provided: logistic regression, random forest, and gradient boosted decision trees. Models are trained and evaluated using n-fold cross validation, and the Gini of the model is written to standard out. The cross validation models are also used to score the data. The script takes three arguments: first is the output from the previous step (for example, `hyper-features.tsv`), second is the classifier type, and third is the name of the output file. Each term pair gets a probability that the respective relation holds between the terms (hyperonymy and cohyponymy).
 
 ```bash
 python3 ontoclassifier/ontoclassifier.py <hyper-features.tsv> <classifier-type> <output-file>
 ```
 
-* Build the ontology. Use the output data from the previous step to iteratively build the ontology by adding one relation at a time. Adding a relation between two terms in the ontology will often imply a set of other relations that will hold after the relation has been added. This set of implied relations is scored (along with the relation itself), and the relation resulting in the highest score for both implied relations and the relation itself, gets added in each step. The resulting ontology is saved in a binary format as provided by the python graph library [graph-tool](https://graph-tool.skewed.de/). The first two arguments to the script are the output files produced in the previous step. It also takes a mapping from terms to ids as argument, in order to be able to output a graph with terms as labels instead of ids (not yet implemented). Call the script like this:
+* Build the ontology. Use the output data from the previous step to iteratively build the ontology by adding one relation at a time. Adding a relation between two terms in the ontology will often imply a set of other relations that will hold after the relation has been added. This set of implied relations is scored (along with the relation itself), and the relation resulting in the highest score for both implied relations and the relation itself, gets added in each step. The resulting ontology is saved in a binary format as provided by the Python graph library [graph-tool](https://graph-tool.skewed.de/). The first two arguments to the script are the output files produced in the previous step. It also takes a mapping from terms to ids as argument, in order to be able to output a graph with terms as labels instead of ids (not yet implemented). Call the script like this:
 
 ```bash
 python3 ontobuilder/ontobuilder.py <hyperonym_probs_file> <cohyponym_probs_file> <term_to_id>
