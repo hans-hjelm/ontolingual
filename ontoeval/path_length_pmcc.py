@@ -29,7 +29,8 @@ class PathLengthPmcc:
             else:
                 continue
             self.ld_vocabulary_size += 1
-            print(self.ld_vocabulary_size)
+            if self.ld_vocabulary_size % 100 == 0:
+                print(self.ld_vocabulary_size)
             for ldv2 in self.ld_ontology.vertices():
                 if ldv1 >= ldv2:
                     continue

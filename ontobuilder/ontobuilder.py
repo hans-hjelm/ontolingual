@@ -26,13 +26,13 @@ class Ontobuilder:
         self.cohyp_probs = list()
         self.lookup_hyp_probs = dict()
         self.lookup_co_probs = dict()
-        #self.prob_threshold = 0.0001
-        self.prob_threshold = 0.5
+        self.prob_threshold = 0.4
         self.candidate_list_size = 1000
         self.score_threshold = 1.0
         self.abstract_node_counter = 0
         self.orphans = list()
-        self.cohyponym_bias = 0.5
+        self.cohyponym_bias = 0.1
+        self.target_ontology_size = 600
 
     def read_relation_scores(self, hyperonym_probs, cohyponym_probs, term_to_id):
         with open(term_to_id) as tti:
@@ -54,9 +54,15 @@ class Ontobuilder:
                     self.lookup_co_probs[id_pair] = float(prob)
             self.cohyp_probs.sort(key=itemgetter(1), reverse=True)
 
+    def keep_adding(self, score):
+        if self.target_ontology_size > 0:
+            return (self.vertex_counter - self.abstract_node_counter - 1) < self.target_ontology_size
+        else:
+            return score > self.score_threshold
+
     def build_ontology(self):
         (ids, score, relation) = self.find_best_relation()
-        while score > self.score_threshold:
+        while self.keep_adding(score):
             (id1, id2) = ids.split('-')
             if id1 in self.term_id_to_vertex_id.keys():
                 node1 = self.ontology.vertex(self.term_id_to_vertex_id[id1])
@@ -67,8 +73,6 @@ class Ontobuilder:
             else:
                 node2 = None
             if relation == 'hyperonym':
-                print(relation + ': ' + ids + ' prob: ' + str(self.lookup_hyp_probs[ids]) + ' score: ' + str(score)
-                      + ' ### ' + self.id_to_term[id1] + ' -> ' + self.id_to_term[id2])
                 if not node1 and not node2:
                     node1 = self.add_vertex(id1)
                     node2 = self.add_vertex(id2)
@@ -95,8 +99,6 @@ class Ontobuilder:
                         self.delete_parent_edge(parent2)
                         self.orphans.append(parent2_node)
             elif relation == 'cohyponym':
-                print(relation + ': ' + ids + ' prob: ' + str(self.lookup_co_probs[ids]) + ' score: ' + str(score)
-                      + ' ### ' + self.id_to_term[id1] + ' <-> ' + self.id_to_term[id2])
                 if not node1 and not node2:
                     node1 = self.add_vertex(id1)
                     node2 = self.add_vertex(id2)
@@ -196,14 +198,12 @@ class Ontobuilder:
         (hyper_ids, hyper_score, hyper_delta) = self.find_best_specific_relation(self.hyper_probs, 'hyperonym')
         (cohyp_ids, cohyp_score, cohyp_delta) = self.find_best_specific_relation(self.cohyp_probs, 'cohyponym')
         if cohyp_ids and cohyp_score > hyper_score:
-            self.print_delta(cohyp_delta)
             self.remove_relation_prob('cohyponym', cohyp_ids)
             self.unset_relation_prob('hyperonym', cohyp_ids)
             (id1, id2) = cohyp_ids.split('-')
             self.unset_relation_prob('hyperonym', id2 + '-' + id1)
             return cohyp_ids, cohyp_score, 'cohyponym'
         elif hyper_ids:
-            self.print_delta(hyper_delta)
             self.remove_relation_prob('hyperonym', hyper_ids)
             self.unset_relation_prob('cohyponym', hyper_ids)
             return hyper_ids, hyper_score, 'hyperonym'
@@ -503,7 +503,7 @@ def main():
     oc = Ontobuilder()
     oc.read_relation_scores(args['<hyperonym_probs>'], args['<cohyponym_probs>'], args['<term_to_id>'])
     oc.build_ontology()
-    oc.save_ontology('ontology.gt')
+    oc.save_ontology('data/ontology.gt')
 
 
 if __name__ == '__main__':
