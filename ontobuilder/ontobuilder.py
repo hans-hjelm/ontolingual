@@ -26,13 +26,14 @@ class Ontobuilder:
         self.cohyp_probs = list()
         self.lookup_hyp_probs = dict()
         self.lookup_co_probs = dict()
-        self.prob_threshold = 0.4
+        self.prob_threshold = 0.5
         self.candidate_list_size = 1000
         self.score_threshold = 1.0
         self.abstract_node_counter = 0
         self.orphans = list()
         self.cohyponym_bias = 0.5
         self.target_ontology_size = 600
+        self.very_small_prob = 0.0001
 
     def read_relation_scores(self, hyperonym_probs, cohyponym_probs, term_to_id):
         with open(term_to_id) as tti:
@@ -42,20 +43,22 @@ class Ontobuilder:
         with open(hyperonym_probs) as hp:
             for line in hp:
                 (id_pair, prob) = line.strip().split('\t')
-                if float(prob) > self.prob_threshold:
+                if float(prob) > self.very_small_prob:
                     self.hyper_probs.append((id_pair, float(prob)))
                     self.lookup_hyp_probs[id_pair] = float(prob)
             self.hyper_probs.sort(key=itemgetter(1), reverse=True)
         with open(cohyponym_probs) as cp:
             for line in cp:
                 (id_pair, prob) = line.strip().split('\t')
-                if float(prob) > self.prob_threshold:
+                if float(prob) > self.very_small_prob:
                     self.cohyp_probs.append((id_pair, float(prob)))
                     self.lookup_co_probs[id_pair] = float(prob)
             self.cohyp_probs.sort(key=itemgetter(1), reverse=True)
 
     def keep_adding(self, score):
         if self.target_ontology_size > 0:
+            if (self.vertex_counter - self.abstract_node_counter - 1) % 100 == 0:
+                print('sz: ' + str(self.vertex_counter - self.abstract_node_counter - 1))
             return (self.vertex_counter - self.abstract_node_counter - 1) < self.target_ontology_size
         else:
             return score > self.score_threshold
@@ -250,7 +253,9 @@ class Ontobuilder:
         counter = 0
         remove_ids = list()
         for (ids, prob) in relation_probabilities:
-            if counter > self.candidate_list_size:
+            if prob < self.prob_threshold:
+                break
+            elif counter > self.candidate_list_size:
                 break
             elif self.check_relation(ids, relation):
                 (score, delta) = self.score_rel_and_delta(ids, relation)
@@ -479,14 +484,14 @@ class Ontobuilder:
                 if ids in self.lookup_co_probs.keys():
                     prob = self.lookup_co_probs[ids]
                 else:
-                    prob = self.prob_threshold
+                    prob = self.very_small_prob
             elif relation == 'hyperonym':
                 if ids in self.lookup_hyp_probs.keys():
                     prob = self.lookup_hyp_probs[ids]
                 else:
-                    prob = self.prob_threshold
+                    prob = self.very_small_prob
             if prob == 1.0:
-                prob = 1.0 - self.prob_threshold
+                prob = 1.0 - self.very_small_prob
             the_odds = prob / (1.0 - prob)
             delta_score *= the_odds
         return delta_score
