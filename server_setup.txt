@@ -1,0 +1,27 @@
+SETUP ON AMAZON EC2 UBUNTU VM
+=============================
+mkdir workspace
+cd workspace
+git clone https://github.com/hans-hjelm/hyperwordshh hyperwords
+sudo apt update
+sudo apt full-upgrade
+sudo apt install cython3
+sudo apt install python3-docopt
+#######
+sudo emacs -nw /etc/apt/sources.list
+-add rows:
+## python graph-tool
+deb http://downloads.skewed.de/apt/xenial xenial universe
+deb-src http://downloads.skewed.de/apt/xenial xenial universe
+#######
+sudo apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25
+sudo apt update
+sudo apt install python3-graph-tool
+sudo apt install python3-pandas
+sudo apt install python3-sklearn
+sudo apt install python3-pip
+export LC_ALL=C
+sudo pip3 install sparsesvd
+git clone https://github.com/hans-hjelm/ontolingual
+cd hyperwords
+sudo python3 setup.py install
