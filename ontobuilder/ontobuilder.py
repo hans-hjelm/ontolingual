@@ -33,7 +33,7 @@ class Ontobuilder:
         self.orphans = list()
         self.cohyponym_bias = 0.5
         self.target_ontology_size = 600
-        self.very_small_prob = 0.0001
+        self.very_small_prob = 0.5
 
     def read_relation_scores(self, hyperonym_probs, cohyponym_probs, term_to_id):
         with open(term_to_id) as tti:
@@ -496,8 +496,8 @@ class Ontobuilder:
             delta_score *= the_odds
         return delta_score
 
-    def save_ontology(self, filename):
-        self.ontology.save(filename, 'gt')
+    def save_ontology(self, filename, format='gt'):
+        self.ontology.save(filename, format)
 
 
 def main():
